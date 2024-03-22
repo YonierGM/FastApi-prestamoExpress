@@ -16,7 +16,11 @@ def get_usuarios():
 # Obtener un usuario por su ID
 @usuarioRoutes.get("/usuarios/{id}", tags=["usuarios"], response_model=Usuario, description="Get a single user by ID")
 def get_usuario(id: int):
-    return conn.execute(usuarios.select().where(usuarios.c.usuarioid == id)).first()
+    existing_usuario = conn.execute(usuarios.select().where(usuarios.c.usuarioid == id)).first()
+    if existing_usuario:
+        return existing_usuario
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario not found")
 
 # Crear un nuevo usuario
 @usuarioRoutes.post("/usuarios", tags=["usuarios"], response_model=Usuario, description="Create a new user")
@@ -25,28 +29,33 @@ def create_usuario(usuario: Usuario):
         new_usuario = {"username": usuario.username, "passw": usuario.passw, "rolid": usuario.rolid}
         result = conn.execute(insert(usuarios).values(new_usuario))
         new_usuario["usuarioid"] = result.inserted_primary_key[0]
+        conn.commit()
         return new_usuario
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 # Actualizar un usuario por su ID
 @usuarioRoutes.put("/usuarios/{id}", tags=["usuarios"], response_model=Usuario, description="Update a user by ID")
 def update_usuario(id: int, usuario: Usuario):
-    conn.execute(
-        usuarios.update()
-        .values(username=usuario.username, passw=usuario.passw, rolid=usuario.rolid)
-        .where(usuarios.c.usuarioid == id)
-    )
-    conn.commit()
-    return usuario
+    existing_usuario = conn.execute(usuarios.select().where(usuarios.c.usuarioid == id)).fetchone()
+    if existing_usuario:
+        conn.execute(
+            usuarios.update()
+            .values(username=usuario.username, passw=usuario.passw, rolid=usuario.rolid)
+            .where(usuarios.c.usuarioid == id)
+        )
+        conn.commit()
+        return Response(status_code=status.HTTP_200_OK, content="Usuario actualizado")
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario not found")
 
 # Eliminar un usuario por su ID
 @usuarioRoutes.delete("/usuarios/{id}", tags=["usuarios"])
 def delete_usuario(id: int):
-    usuario = conn.execute(usuarios.select().where(usuarios.c.usuarioid == id)).fetchone()
-    if usuario:
+    existing_usuario = conn.execute(usuarios.select().where(usuarios.c.usuarioid == id)).fetchone()
+    if existing_usuario:
         conn.execute(usuarios.delete().where(usuarios.c.usuarioid == id))
         conn.commit()
         return Response(status_code=status.HTTP_200_OK, content="Usuario eliminado")
     else:
-        return Response(status_code=status.HTTP_404_NOT_FOUND, content="Usuario no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario not found")

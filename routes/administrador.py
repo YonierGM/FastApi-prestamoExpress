@@ -16,7 +16,11 @@ def get_administradores():
 # Obtener un administrador por su ID
 @administradorRoutes.get("/administradores/{id}", tags=["administradores"], response_model=Administrador, description="Get a single administrator by ID")
 def get_administrador(id: int):
-    return conn.execute(administradores.select().where(administradores.c.administradorid == id)).first()
+    existing_administrador = conn.execute(administradores.select().where(administradores.c.administradorid == id)).first()
+    if existing_administrador:
+        return existing_administrador
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Administrador not found")
 
 # Crear un nuevo administrador
 @administradorRoutes.post("/administradores", tags=["administradores"], response_model=Administrador, description="Create a new administrator")
@@ -25,28 +29,33 @@ def create_administrador(administrador: Administrador):
         new_administrador = {"nombre": administrador.nombre, "apellido": administrador.apellido, "documento": administrador.documento, "email": administrador.email, "celular": administrador.celular, "rolid": administrador.rolid}
         result = conn.execute(insert(administradores).values(new_administrador))
         new_administrador["administradorid"] = result.inserted_primary_key[0]
+        conn.commit()
         return new_administrador
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 # Actualizar un administrador por su ID
 @administradorRoutes.put("/administradores/{id}", tags=["administradores"], response_model=Administrador, description="Update an administrator by ID")
 def update_administrador(id: int, administrador: Administrador):
-    conn.execute(
-        administradores.update()
-        .values(nombre=administrador.nombre, apellido=administrador.apellido, documento=administrador.documento, email=administrador.email, celular=administrador.celular, rolid=administrador.rolid)
-        .where(administradores.c.administradorid == id)
-    )
-    conn.commit()
-    return administrador
+    existing_administrador = conn.execute(administradores.select().where(administradores.c.administradorid == id)).fetchone()
+    if existing_administrador:
+        conn.execute(
+            administradores.update()
+            .values(nombre=administrador.nombre, apellido=administrador.apellido, documento=administrador.documento, email=administrador.email, celular=administrador.celular, rolid=administrador.rolid)
+            .where(administradores.c.administradorid == id)
+        )
+        conn.commit()
+        return Response(status_code=status.HTTP_200_OK, content="Administrador actualizado")
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Administrador not found")
 
 # Eliminar un administrador por su ID
 @administradorRoutes.delete("/administradores/{id}", tags=["administradores"])
 def delete_administrador(id: int):
-    administrador = conn.execute(administradores.select().where(administradores.c.administradorid == id)).fetchone()
-    if administrador:
+    existing_administrador = conn.execute(administradores.select().where(administradores.c.administradorid == id)).fetchone()
+    if existing_administrador:
         conn.execute(administradores.delete().where(administradores.c.administradorid == id))
         conn.commit()
         return Response(status_code=status.HTTP_200_OK, content="Administrador eliminado")
     else:
-        return Response(status_code=status.HTTP_404_NOT_FOUND, content="Administrador no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Administrador not found")

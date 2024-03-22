@@ -16,7 +16,11 @@ def get_pagos():
 # Obtener un pago por su ID
 @pagoRoutes.get("/pagos/{id}", tags=["pagos"], response_model=Pago, description="Get a single payment by ID")
 def get_pago(id: int):
-    return conn.execute(pagos.select().where(pagos.c.pagoid == id)).first()
+    existing_pago = conn.execute(pagos.select().where(pagos.c.pagoid == id)).first()
+    if existing_pago:
+        return existing_pago
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pago not found")
 
 # Crear un nuevo pago
 @pagoRoutes.post("/pagos", tags=["pagos"], response_model=Pago, description="Create a new payment")
@@ -25,28 +29,33 @@ def create_pago(pago: Pago):
         new_pago = {"fechapago": pago.fechapago, "monto": pago.monto, "prestamoid": pago.prestamoid}
         result = conn.execute(insert(pagos).values(new_pago))
         new_pago["pagoid"] = result.inserted_primary_key[0]
+        conn.commit()
         return new_pago
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 # Actualizar un pago por su ID
 @pagoRoutes.put("/pagos/{id}", tags=["pagos"], response_model=Pago, description="Update a payment by ID")
 def update_pago(id: int, pago: Pago):
-    conn.execute(
-        pagos.update()
-        .values(fechapago=pago.fechapago, monto=pago.monto, prestamoid=pago.prestamoid)
-        .where(pagos.c.pagoid == id)
-    )
-    conn.commit()
-    return pago
+    existing_pago = conn.execute(pagos.select().where(pagos.c.pagoid == id)).fetchone()
+    if existing_pago:
+        conn.execute(
+            pagos.update()
+            .values(fechapago=pago.fechapago, monto=pago.monto, prestamoid=pago.prestamoid)
+            .where(pagos.c.pagoid == id)
+        )
+        conn.commit()
+        return Response(status_code=status.HTTP_200_OK, content="Pago actualizado")
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pago not found")
 
 # Eliminar un pago por su ID
 @pagoRoutes.delete("/pagos/{id}", tags=["pagos"])
 def delete_pago(id: int):
-    pago = conn.execute(pagos.select().where(pagos.c.pagoid == id)).fetchone()
-    if pago:
+    existing_pago = conn.execute(pagos.select().where(pagos.c.pagoid == id)).fetchone()
+    if existing_pago:
         conn.execute(pagos.delete().where(pagos.c.pagoid == id))
         conn.commit()
         return Response(status_code=status.HTTP_200_OK, content="Pago eliminado")
     else:
-        return Response(status_code=status.HTTP_404_NOT_FOUND, content="Pago no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pago not found")
