@@ -6,6 +6,9 @@ from config.db import conn
 from models.usuario import usuarios
 from schemas.usuario import Usuario
 
+#para encriptar la contraseña
+from bcrypt import hashpw, gensalt
+
 usuarioRoutes = APIRouter()
 
 # Obtener todos los usuarios
@@ -26,10 +29,14 @@ def get_usuario(id: int):
 @usuarioRoutes.post("/usuarios", tags=["usuarios"], response_model=Usuario, description="Create a new user")
 def create_usuario(usuario: Usuario):
     try:
-        new_usuario = {"username": usuario.username, "passw": usuario.passw, "rolid": usuario.rolid}
+        # Encriptar la contraseña antes de almacenarla
+        hashed_password = hashpw(usuario.passw.encode('utf-8'), gensalt())
+
+        new_usuario = {"username": usuario.username, "passw": hashed_password, "rolid": usuario.rolid}
         result = conn.execute(insert(usuarios).values(new_usuario))
         new_usuario["usuarioid"] = result.inserted_primary_key[0]
         conn.commit()
+
         return new_usuario
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
@@ -39,9 +46,12 @@ def create_usuario(usuario: Usuario):
 def update_usuario(id: int, usuario: Usuario):
     existing_usuario = conn.execute(usuarios.select().where(usuarios.c.usuarioid == id)).fetchone()
     if existing_usuario:
+        # Encriptar la contraseña antes de almacenarla
+        hashed_password = hashpw(usuario.passw.encode('utf-8'), gensalt())
+
         conn.execute(
             usuarios.update()
-            .values(username=usuario.username, passw=usuario.passw, rolid=usuario.rolid)
+            .values(username=usuario.username, passw= hashed_password, rolid=usuario.rolid)
             .where(usuarios.c.usuarioid == id)
         )
         conn.commit()
