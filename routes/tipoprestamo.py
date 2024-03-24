@@ -56,6 +56,6 @@ def delete_tipo_prestamo(id: int):
     if existing_tipo_prestamo:
         conn.execute(tipoprestamos.delete().where(tipoprestamos.c.tipoprestamoid == id))
         conn.commit()
-        return Response(status_code=status.HTTP_200_OK, content="Tipo de préstamo eliminado")
+        return status.HTTP_200_OK
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tipo de préstamo not found")

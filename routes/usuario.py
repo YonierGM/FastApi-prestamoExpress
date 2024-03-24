@@ -66,6 +66,6 @@ def delete_usuario(id: int):
     if existing_usuario:
         conn.execute(usuarios.delete().where(usuarios.c.usuarioid == id))
         conn.commit()
-        return Response(status_code=status.HTTP_200_OK, content="Usuario eliminado")
+        return status.HTTP_200_OK
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario not found")

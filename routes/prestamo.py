@@ -97,6 +97,6 @@ def delete_prestamo(id: int):
     if existing_prestamo:
         conn.execute(prestamos.delete().where(prestamos.c.prestamoid == id))
         conn.commit()
-        return Response(status_code=status.HTTP_200_OK, content="Préstamo eliminado")
+        return status.HTTP_200_OK
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Préstamo not found")

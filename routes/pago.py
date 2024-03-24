@@ -56,6 +56,6 @@ def delete_pago(id: int):
     if existing_pago:
         conn.execute(pagos.delete().where(pagos.c.pagoid == id))
         conn.commit()
-        return Response(status_code=status.HTTP_200_OK, content="Pago eliminado")
+        return status.HTTP_200_OK
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pago not found")

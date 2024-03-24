@@ -56,6 +56,6 @@ def delete_cliente(id: int):
     if existing_cliente:
         conn.execute(clientes.delete().where(clientes.c.clienteid == id))
         conn.commit()
-        return Response(status_code=status.HTTP_200_OK, content="Cliente eliminado")
+        return status.HTTP_200_OK
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente not found")

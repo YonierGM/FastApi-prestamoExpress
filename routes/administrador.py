@@ -57,6 +57,6 @@ def delete_administrador(id: int):
     if existing_administrador:
         conn.execute(administradores.delete().where(administradores.c.administradorid == id))
         conn.commit()
-        return Response(status_code=status.HTTP_200_OK, content="Administrador eliminado")
+        return status.HTTP_200_OK
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Administrador not found")

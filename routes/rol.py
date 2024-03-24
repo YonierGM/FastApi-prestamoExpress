@@ -69,6 +69,6 @@ def delete_rol(id: int):
     if existing_rol:
         conn.execute(roles.delete().where(roles.c.rolid == id))
         conn.commit()
-        return Response(status_code=status.HTTP_200_OK, content="Rol Eliminado")
+        return status.HTTP_200_OK
     else:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Rol not found")
