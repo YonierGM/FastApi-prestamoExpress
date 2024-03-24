@@ -1,17 +1,54 @@
 from fastapi import APIRouter, HTTPException, Response, status
 from typing import List
-from sqlalchemy import insert
+from sqlalchemy import select, join, insert
 
 from config.db import conn
-from models.prestamo import prestamos
-from schemas.prestamo import Prestamo
 
+from schemas.prestamo import Prestamo
+from models.estadoprestamo import estadoprestamos
+from models.prestamo import prestamos
+from models.cliente import clientes
+from models.tipoprestamo import tipoprestamos
+
+from fastapi import Query
 prestamoRoutes = APIRouter()
 
 # Obtener todos los préstamos
-@prestamoRoutes.get("/prestamos", tags=["prestamos"], response_model=List[Prestamo], description="Get a list of all loans")
+from collections import namedtuple
+
+@prestamoRoutes.get("/prestamos", tags=["prestamos"], description="Get a list of all loans")
 def get_prestamos():
-    return conn.execute(prestamos.select()).fetchall()
+    query = (
+        select(
+            prestamos.c.prestamoid,
+            prestamos.c.fechaprestamo,
+            prestamos.c.fechaestimadapago,
+            prestamos.c.monto,
+            prestamos.c.cuotas,
+            prestamos.c.valorcuota,
+            clientes.c.nombre.label('nombre_cliente'),
+            clientes.c.apellido.label('apellido_cliente'),
+            estadoprestamos.c.descripcion.label('descripcion_estadoPrestamo'),
+            tipoprestamos.c.descripcion.label('descripcion_tipoprestamo')
+        )
+        .select_from(
+            prestamos.join(clientes, prestamos.c.clienteid == clientes.c.clienteid)
+            .join(tipoprestamos, prestamos.c.tipoprestamoid == tipoprestamos.c.tipoprestamoid)
+            .join(estadoprestamos, prestamos.c.estadoid == estadoprestamos.c.estadoid   )
+        )
+    )
+
+    # Obtener los nombres de las columnas
+    columns = query.columns.keys()
+
+    # Ejecutar la consulta y obtener los resultados
+    result_temporal = conn.execute(query).fetchall()
+
+    # Construir una lista de diccionarios a partir del resultado
+    result_final = [dict(zip(columns, row)) for row in result_temporal]
+
+    return result_final
+
 
 # Obtener un préstamo por su ID
 @prestamoRoutes.get("/prestamos/{id}", tags=["prestamos"], response_model=Prestamo, description="Get a single loan by ID")

@@ -39,6 +39,7 @@ def create_administrador(administrador: Administrador):
 def update_administrador(id: int, administrador: Administrador):
     existing_administrador = conn.execute(administradores.select().where(administradores.c.administradorid == id)).fetchone()
     if existing_administrador:
+
         conn.execute(
             administradores.update()
             .values(nombre=administrador.nombre, apellido=administrador.apellido, documento=administrador.documento, email=administrador.email, celular=administrador.celular, rolid=administrador.rolid)

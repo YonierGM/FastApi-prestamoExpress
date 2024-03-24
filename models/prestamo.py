@@ -23,6 +23,7 @@ prestamos = Table(
     Column("estadoid", Integer, ForeignKey(estadoprestamos.c.estadoid)),
     Column("tipoprestamoid", Integer, ForeignKey(tipoprestamos.c.tipoprestamoid)),
     extend_existing=True
+
 )
 meta.create_all(engine)
 
