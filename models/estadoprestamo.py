@@ -13,4 +13,3 @@ estadoprestamos = Table(
     Column("descripcion", String(255)),
 )
 meta.create_all(engine)
-

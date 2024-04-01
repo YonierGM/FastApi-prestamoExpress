@@ -19,6 +19,8 @@ clientes = Table(
     Column("direccion", String(255)),
     Column("celular", String(255)),
     Column("email", String(255)),
+    Column("username", String(255)),
+    Column("passw", String(255)),
     Column("rolid", Integer),
     ForeignKeyConstraint(["rolid"], ["roles.rolid"], ondelete="CASCADE"),
     extend_existing=True

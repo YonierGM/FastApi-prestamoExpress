@@ -17,4 +17,3 @@ usuarios = Table(
     extend_existing=True
 )
 meta.create_all(engine)
-

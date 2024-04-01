@@ -1,15 +1,36 @@
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Response
 from typing import List
-from sqlalchemy import insert
+from sqlalchemy import insert, select
 
 from config.db import conn
 from models.usuario import usuarios
 from schemas.usuario import Usuario
 
-#para encriptar la contraseña
-from bcrypt import hashpw, gensalt
-
 usuarioRoutes = APIRouter()
+
+from fastapi import HTTPException, status
+from pydantic import BaseModel
+
+
+@usuarioRoutes.post("/login", response_model=Usuario, tags=["usuarios"], description="Login and verify user credentials")
+def login(usuario: Usuario):
+    # Verificar si existe el usuario
+    existing_usuario = conn.execute(usuarios.select().where(usuarios.c.username == usuario.username)).first()
+    if existing_usuario:
+        # Verificar la contraseña
+        if existing_usuario.passw == usuario.passw:
+            print("Contraseña validada", existing_usuario.passw)
+            # Verificar el rol
+            if existing_usuario.rolid == usuario.rolid:
+                print("rol validada", existing_usuario.rolid)
+                return existing_usuario
+            else:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rol incorrecto")
+        else:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Contraseña incorrecta")
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
 
 # Obtener todos los usuarios
 @usuarioRoutes.get("/usuarios", tags=["usuarios"], response_model=List[Usuario], description="Get a list of all users")
@@ -30,9 +51,9 @@ def get_usuario(id: int):
 def create_usuario(usuario: Usuario):
     try:
         # Encriptar la contraseña antes de almacenarla
-        hashed_password = hashpw(usuario.passw.encode('utf-8'), gensalt())
+        # hashed_password = hashpw(usuario.passw.encode('utf-8'), gensalt())
 
-        new_usuario = {"username": usuario.username, "passw": hashed_password, "rolid": usuario.rolid}
+        new_usuario = {"username": usuario.username, "passw": usuario.passw, "rolid": usuario.rolid}
         result = conn.execute(insert(usuarios).values(new_usuario))
         new_usuario["usuarioid"] = result.inserted_primary_key[0]
         conn.commit()
@@ -46,12 +67,10 @@ def create_usuario(usuario: Usuario):
 def update_usuario(id: int, usuario: Usuario):
     existing_usuario = conn.execute(usuarios.select().where(usuarios.c.usuarioid == id)).fetchone()
     if existing_usuario:
-        # Encriptar la contraseña antes de almacenarla
-        hashed_password = hashpw(usuario.passw.encode('utf-8'), gensalt())
 
         conn.execute(
             usuarios.update()
-            .values(username=usuario.username, passw= hashed_password, rolid=usuario.rolid)
+            .values(username=usuario.username, passw= usuario.passw, rolid=usuario.rolid)
             .where(usuarios.c.usuarioid == id)
         )
         conn.commit()

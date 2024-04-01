@@ -22,6 +22,19 @@ def get_pago(id: int):
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pago not found")
 
+# Obtener un pago por su ID
+@pagoRoutes.get("/prestamopago/{id}", tags=["pagos"], response_model=List[Pago], description="Get a single payment by ID")
+def get_pago(id: int):
+    try:
+        existing_pago = conn.execute(pagos.select().where(pagos.c.prestamoid == id)).fetchall()
+        if existing_pago:
+            return existing_pago
+        else:
+            return []
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
 # Crear un nuevo pago
 @pagoRoutes.post("/pagos", tags=["pagos"], response_model=Pago, description="Create a new payment")
 def create_pago(pago: Pago):
@@ -32,6 +45,7 @@ def create_pago(pago: Pago):
         conn.commit()
         return new_pago
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 # Actualizar un pago por su ID

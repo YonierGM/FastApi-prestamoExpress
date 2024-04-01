@@ -16,8 +16,9 @@ administradores = Table(
     Column("documento", Integer),
     Column("email", String(255)),
     Column("celular", String(255)),
+    Column("username", String(255)),
+    Column("passw", String(255)),
     Column("rolid", Integer, ForeignKey(roles.c.rolid)),
     extend_existing=True
 )
 meta.create_all(engine)
-

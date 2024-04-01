@@ -9,4 +9,6 @@ class Administrador(BaseModel):
     documento: int
     email: str
     celular: str
+    username: str
+    passw: str
     rolid: int

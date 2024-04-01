@@ -11,4 +11,6 @@ class Cliente(BaseModel):
     direccion: str
     celular: int
     email: str
+    username: str
+    passw: str
     rolid: int
