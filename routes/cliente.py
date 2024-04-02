@@ -5,6 +5,7 @@ from sqlalchemy import insert
 
 from config.db import conn
 from models.cliente import clientes
+from models.prestamo import prestamos
 from schemas.cliente import Cliente
 
 clienteRoutes = APIRouter()
@@ -83,8 +84,18 @@ def update_cliente(id: int, cliente: Cliente):
 def delete_cliente(id: int):
     existing_cliente = conn.execute(clientes.select().where(clientes.c.clienteid == id)).fetchone()
     if existing_cliente:
-        conn.execute(clientes.delete().where(clientes.c.clienteid == id))
-        conn.commit()
-        return status.HTTP_200_OK
+        print("cliente existe")
+
+        prestamo_cliente = conn.execute(prestamos.select().where(prestamos.c.clienteid == existing_cliente.clienteid)).fetchall()
+
+        if prestamo_cliente:
+            print("hola")
+
+            return HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail= "El cliente tiene prestamos activos")
+        else:
+
+            conn.execute(clientes.delete().where(clientes.c.clienteid == id))
+            conn.commit()
+            return status.HTTP_200_OK
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente not found")
